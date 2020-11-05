@@ -21,6 +21,7 @@
 
 P = peaks(20);
 X = repmat(P,[5 10]);
+figure(1)
 imagesc(X)
 
 % Compute the 2-D Fourier transform of the data.
@@ -33,4 +34,5 @@ signal_fft = fftshift(signal_fft);
 signal_fft = abs(signal_fft);
 
 % Plot the resulting 100-by-200 matrix, which is the same size as X.
+figure(2)
 imagesc(signal_fft)

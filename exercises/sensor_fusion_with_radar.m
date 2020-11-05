@@ -17,7 +17,8 @@ scenario.SampleTime = 0.01;
 % road is defined using a set of points, where each point defines the center of 
 % the road in 3-D space. 
 roadCenters = [0 0; 50 0; 100 0; 250 20; 500 40];
-road(scenario, roadCenters, 'lanes',lanespec(2));
+% lanespec(numlanes,Name,Value), Width - Lane width (defaultly 3.6 m)
+road(scenario, roadCenters, 'lanes', lanespec(2));
 
 %% 
 % Create the ego vehicle and three cars around it: one that overtakes the
@@ -31,6 +32,7 @@ road(scenario, roadCenters, 'lanes',lanespec(2));
 % vehicle on the right lane by subtracting off half a lane width (1.8 m)
 % from the centerline of the road.
 egoCar = vehicle(scenario, 'ClassID', 1);
+% trajectory(ac,waypoints,speed)
 trajectory(egoCar, roadCenters(2:end,:) - [0 1.8], 25); % On right lane
 
 % Add a car in front of the ego vehicle
@@ -97,10 +99,8 @@ sensors{6} = radarDetectionGenerator('SensorIndex', 6, 'Height', 0.2, 'Yaw', -60
 % need to track the height.
 
 
-
-%% TODO*
-%Change the Tracker Parameters and explain the reasoning behind selecting
-%the final values. You can find more about parameters here: https://www.mathworks.com/help/driving/ref/multiobjecttracker-system-object.html
+% DONE: Change the Tracker Parameters and explain the reasoning behind selecting
+% the final values. You can find more about parameters here: https://www.mathworks.com/help/driving/ref/multiobjecttracker-system-object.html
 
 tracker = multiObjectTracker('FilterInitializationFcn', @initSimDemoFilter, ...
     'AssignmentThreshold', 30, 'ConfirmationParameters', [4 5], 'NumCoastingUpdates', 5);
@@ -180,14 +180,19 @@ end
 %
 % This function initializes a constant velocity filter based on a detection.
 function filter = initSimDemoFilter(detection)
-% Use a 2-D constant velocity model to initialize a trackingKF filter.
-% The state vector is [x;vx;y;vy]
-% The detection measurement vector is [x;y;vx;vy]
-% As a result, the measurement model is H = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 1]
+    % Use a 2-D constant velocity model to initialize a trackingKF filter.
+    % The state vector is [x;vx;y;vy]
+    % The detection measurement vector is [x;y;vx;vy]
+    % As a result, the measurement model is H = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 1]
 
-%TODO: Implement the Kalman filter using trackingKF function. If stuck
-%review the implementation discussed in the project walkthrough
-
+    % DONE: Implement the Kalman filter using trackingKF function. If stuck
+    % review the implementation discussed in the project walkthrough
+    H = [1 0 0 0; 0 0 1 0; 0 1 0 0; 0 0 0 1];
+    filter = trackingKF('MotionModel', '2D Constant Velocity', ...
+     'State', H' * detection.Measurement, ...
+     'MeasurementModel', H, ...
+     'StateCovariance', H' * detection.MeasurementNoise * H, ...
+     'MeasurementNoise', detection.MeasurementNoise);
 
 end
 
@@ -205,37 +210,53 @@ end
 % In addition, this function removes the third dimension of the measurement 
 % (the height) and reduces the measurement vector to [x;y;vx;vy].
 function detectionClusters = clusterDetections(detections, vehicleSize)
-N = numel(detections);
-distances = zeros(N);
-for i = 1:N
-    for j = i+1:N
-        if detections{i}.SensorIndex == detections{j}.SensorIndex
-            distances(i,j) = norm(detections{i}.Measurement(1:2) - detections{j}.Measurement(1:2));
-        else
-            distances(i,j) = inf;
+    N = numel(detections);
+    distances = zeros(N);
+    for i = 1:N
+        for j = i+1:N
+            if detections{i}.SensorIndex == detections{j}.SensorIndex
+                distances(i,j) = norm(detections{i}.Measurement(1:2) - detections{j}.Measurement(1:2));
+            else
+                distances(i,j) = inf;
+            end
         end
     end
-end
-leftToCheck = 1:N;
-i = 0;
-detectionClusters = cell(N,1);
-while ~isempty(leftToCheck)    
-    % Remove the detections that are in the same cluster as the one under
-    % consideration
-    
-    %TODO : Complete the clustering loop based on the implementation
-    %discussed in the lesson 
 
-end
-detectionClusters(i+1:end) = [];
+    leftToCheck = 1:N;
+    i = 0;
+    detectionClusters = cell(N,1);
 
-% Since the detections are now for clusters, modify the noise to represent
-% that they are of the whole car
-for i = 1:numel(detectionClusters)
-    measNoise(1:2,1:2) = vehicleSize^2 * eye(2);
-    measNoise(3:4,3:4) = eye(2) * 100 * vehicleSize^2;
-    detectionClusters{i}.MeasurementNoise = measNoise;
-end
+    while ~isempty(leftToCheck)    
+        % Remove the detections that are in the same cluster as the one under
+        % consideration
+
+        % Done: Complete the clustering loop based on the implementation
+        % discussed in the lesson 
+
+        underConsideration = leftToCheck(1);
+        clusterInds = (distances(underConsideration, leftToCheck) < vehicleSize);
+        detInds = leftToCheck(clusterInds);
+        clusterDets = [detections{detInds}];
+        clusterMeas = [clusterDets.Measurement];
+        meas = mean(clusterMeas, 2);
+        meas2D = [meas(1:2); 
+                  meas(4:5)];
+        i = i+1;
+        detectionClusters{i} = detections{detInds(1)};
+        detectionClusters{i}.Measurement = meas2D;
+        leftToCheck(clusterInds) = [];
+
+    end
+
+    detectionClusters(i+1:end) = [];
+
+    % Since the detections are now for clusters, modify the noise to represent
+    % that they are of the whole car
+    for i = 1:numel(detectionClusters)
+        measNoise(1:2,1:2) = vehicleSize^2 * eye(2);
+        measNoise(3:4,3:4) = eye(2) * 100 * vehicleSize^2;
+        detectionClusters{i}.MeasurementNoise = measNoise;
+    end
 end
 
 %%% 

@@ -1,4 +1,4 @@
-%% 2D Fast Fourier Transform (2D FFT)
+%% 3.5 2D Fast Fourier Transform (2D FFT)
 
 % % See the doucmentation here: https://www.mathworks.com/help/matlab/ref/fft2.html
 % signal  = reshape(signal, [M, N]);  % M samples and N size per sample
@@ -20,7 +20,7 @@
 % Create and plot 2-D data with repeated blocks.
 
 P = peaks(20);
-X = repmat(P,[5 10]);
+X = repmat(P, [5 10]);
 figure(1)
 imagesc(X)
 

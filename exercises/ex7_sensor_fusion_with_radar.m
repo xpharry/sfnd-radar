@@ -210,7 +210,7 @@ end
 % In addition, this function removes the third dimension of the measurement 
 % (the height) and reduces the measurement vector to [x;y;vx;vy].
 function detectionClusters = clusterDetections(detections, vehicleSize)
-    N = numel(detections);
+    N = numel(detections); % numl returns the number of elements in the array
     distances = zeros(N);
     for i = 1:N
         for j = i+1:N

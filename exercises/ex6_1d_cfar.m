@@ -1,5 +1,6 @@
 %% Implement 1D CFAR using lagging cells on the given noise and target scenario
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Close and delete all currently open figures
 close all; clear; clc;
 
@@ -14,8 +15,9 @@ s = abs(randn(Ns, 1));
 s([100, 200, 300, 700]) = [8, 9, 4, 11];
 
 % Plot the output
-plot(s);
+figure, plot(s);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Apply CFAR to detect the targets by filtering the noise.
 
 % 1. Define the following:
@@ -36,28 +38,28 @@ threshold_cfar = [];
 signal_cfar = [];
 
 % 2. Slide window (size guard + training + sample cell) across the signal length
-for i = 1:(Ns - (G + T + 1))
+for i = 1:(Ns-(G+T+1))
 
     % 2. - 5. Determine the noise threshold by measuring it within the training cells
-    noise_level = sum(s(i : (i + T - 1)));
-    threshold = offset * noise_level / T;  % average noise level in training cells x offset
+    noise_level = sum(s(i:(i+T-1)));
+    threshold = (noise_level/T)*offset;  % average noise level in training cells x offset
     threshold_cfar = [threshold_cfar, {threshold}];  % concatenate to hold vector of thresholds
     
     % 6. Measuring the signal within the CUT
-    signal = s(i + T + G);
+    signal = s(i+T+G);
 
     % 8. Filter the signal above the threshold
-    if (signal < threshold)
+    if signal < threshold
         signal = 0;
     end
     signal_cfar = [signal_cfar, {signal}];
 end
 
 % Plot the filtered signal
-% plot (cell2mat(signal_cfar), 'g--');
+figure, plot(cell2mat(signal_cfar), 'g--');
 
 % Plot original sig, threshold and filtered signal within the same figure.
 figure, plot(s);
-hold on, plot(cell2mat(circshift(threshold_cfar, G)), 'r--', 'LineWidth', 2);
-hold on, plot(cell2mat(circshift(signal_cfar, (T + G))), 'g--', 'LineWidth', 4);
+hold on, plot(cell2mat(circshift(threshold_cfar, G)), 'r--', 'LineWidth', 2); % circshift: Shift array circularly
+hold on, plot(cell2mat(circshift(signal_cfar, (T+G))), 'g--', 'LineWidth', 4);
 legend('Signal', 'CFAR Threshold', 'detection');

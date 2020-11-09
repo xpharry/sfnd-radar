@@ -1,4 +1,4 @@
-%% Fast Fourier Transform (FFT)
+%% 3.4 Fast Fourier Transform (FFT)
 
 % % Define a signal
 % signal = A*cos(2*pi*f*t);
@@ -20,10 +20,10 @@ L = 1500;             % Length of signal
 t = (0:L-1)*T;        % Time vector
 
 % Form a signal containing a 77 Hz sinusoid of amplitude 0.7 and a 43Hz sinusoid of amplitude 2.
-S = 0.7 * cos(2 * pi * 77 * t) + 2 * cos(2 * pi * 43 * t);
+S = 0.7*cos(2*pi*77*t) + 2*cos(2*pi*43*t);
 
 % Corrupt the signal with noise 
-X = S + 2 * randn(size(t));
+X = S + 2*randn(size(t));
 
 % Plot the noisy signal in the time domain. It is difficult to identify the frequency components by looking at the signal X(t). 
 figure(1)

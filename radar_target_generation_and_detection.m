@@ -1,7 +1,7 @@
 clear all
 clc;
 
-%% Radar Specifications 
+%% Radar Specifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Frequency of operation = 77GHz
 % Max Range = 200m
@@ -21,7 +21,7 @@ c = 3e8;
 % *%TODO* :
 % define the target's initial position and velocity. Note : Velocity
 % remains contant
- 
+
 R0 = 110;
 v = -20;
 
@@ -32,18 +32,18 @@ v = -20;
 % Calculate the Bandwidth (B), Chirp Time (Tchirp) and Slope (slope) of the FMCW
 % chirp using the requirements above.
 
-rrtScale = 5.5;
-
 B = c/(2*rangeResolution);
+
+rrtScale = 5.5;
 Tchirp = rrtScale*(2*maxRange/c);
 slope = B/Tchirp;
 
-                                                          
+
 %The number of chirps in one sequence. Its ideal to have 2^ value for the ease of running the FFT
-%for Doppler Estimation. 
+%for Doppler Estimation.
 Nd = 128;                   % #of doppler cells OR #of sent periods % number of chirps
 
-%The number of samples on each chirp. 
+%The number of samples on each chirp.
 Nr = 1024;                  % for length of time OR # of range cells
 
 % Timestamp for running the displacement scenario for every sample on each
@@ -62,28 +62,28 @@ td = zeros(1, length(t));
 
 
 %% Signal generation and Moving Target simulation
-% Running the radar scenario over the time. 
+% Running the radar scenario over the time.
 
-for i = 1:length(t)         
-    
-    
+for i = 1:length(t)
+
+
     % *%TODO* :
-    % For each time stamp update the Range of the Target for constant velocity. 
+    % For each time stamp update the Range of the Target for constant velocity.
     R = R0 + v*t(i);
     tau = R/c;
-    
+
     % *%TODO* :
     % For each time sample we need update the transmitted and
-    % received signal. 
+    % received signal.
     Tx(i) = cos(2*pi*(fc*t(i) + (slope*t(i)^2)/2));
     Rx(i) = cos(2*pi*(fc*(t(i)-tau) + (slope*(t(i)-tau)^2)/2));
-    
+
     % *%TODO* :
     % Now by mixing the Transmit and Receive generate the beat signal
     % This is done by element wise matrix multiplication of Transmit and
     % Receiver Signal
     Mix(i) = Tx(i)*Rx(i);
-    
+
 end
 
 %% RANGE MEASUREMENT
@@ -117,7 +117,7 @@ figure ('Name', 'Range from First FFT');
 % subplot(2,1,1)
 
 % *%TODO* :
-% plot FFT output 
+% plot FFT output
 plot(signal_fft);
 axis([0 200 0 0.5]);
 
@@ -163,7 +163,7 @@ Tr = 12; % Training (range dimension)
 Td = 3; % Training cells (doppler dimension)
 
 % *%TODO* :
-% Select the number of Guard Cells in both dimensions around the Cell under 
+% Select the number of Guard Cells in both dimensions around the Cell under
 % test (CUT) for accurate estimation
 
 Gr = 4; % Guard cells (range dimension)
@@ -199,34 +199,35 @@ for i = 1:(Nr/2-(2*Gr+2*Tr)) % range index
     for j = 1:(Nd-(2*Gd+2*Td)) % doppler index
 
         s1 = sum(db2pow(RDM(i:i+2*Tr+2*Gr, j:j+2*Td+2*Gd)), 'all');
-        s2 = sum(db2pow(RDM(i+Tr:i+Tr+2*Gr, j+Td:j+Td+2*Gd)), 'all');    
+        s2 = sum(db2pow(RDM(i+Tr:i+Tr+2*Gr, j+Td:j+Td+2*Gd)), 'all');
         noise_level = s1 - s2;
-        
-        threshold = noise_level/num_cells;      
-        threshold = pow2db(threshold)+offset;
-        threshold = db2pow(threshold);
-        
-        signal = db2pow(RDM(i+Tr+Gr, j+Td+Gd));
-        
+
+        threshold = noise_level/num_cells;
+        threshold = pow2db(threshold);
+
+        threshold = threshold+offset;
+
+        signal = RDM(i+Tr+Gr, j+Td+Gd);
+
         if signal < threshold
             signal = 0;
-        else 
+        else
             signal = 1;
         end
-        
-        signal_cfar(i+Tr+Gr, j+Td+Gd) = signal;  
-        
+
+        signal_cfar(i+Tr+Gr, j+Td+Gd) = signal;
+
     end
 end
 
 
 % *%TODO* :
-% The process above will generate a thresholded block, which is smaller 
+% The process above will generate a thresholded block, which is smaller
 % than the Range Doppler Map as the CUT cannot be located at the edges of
 % matrix. Hence,few cells will not be thresholded. To keep the map size same
-% set those values to 0. 
+% set those values to 0.
 
-% skip
+% skip as those are zeros intially
 
 
 % *%TODO* :
@@ -235,7 +236,3 @@ end
 figure('Name', 'CA-CFAR applied on the range doppler map (RDM)');
 surf(doppler_axis, range_axis, signal_cfar);
 colorbar;
-
-
- 
-
